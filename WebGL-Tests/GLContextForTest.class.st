@@ -1,10 +1,13 @@
+"
+I provide a mock GLContext so that tests can run.
+"
 Class {
 	#name : #GLContextForTest,
 	#superclass : #GLContext,
 	#instVars : [
 		'shaderSource'
 	],
-	#category : #'WebGL-Tests'
+	#category : #'WebGL-Tests-Tests'
 }
 
 { #category : #'mock for WebGL' }

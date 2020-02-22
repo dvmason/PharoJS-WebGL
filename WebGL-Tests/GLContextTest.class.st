@@ -1,10 +1,13 @@
+"
+I contain tests that can run on the Pharo side that verify that programs are built correctly.
+"
 Class {
 	#name : #GLContextTest,
 	#superclass : #TestCase,
 	#instVars : [
 		'gl'
 	],
-	#category : #'WebGL-Tests'
+	#category : #'WebGL-Tests-Tests'
 }
 
 { #category : #running }
