@@ -1,6 +1,6 @@
 Class {
 	#name : #GLRotationApp,
-	#superclass : #Object,
+	#superclass : #PjWebApplication,
 	#instVars : [
 		'gl',
 		'projectionMatrix',
