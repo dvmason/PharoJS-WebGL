@@ -249,7 +249,7 @@ GLRotationApp >> initProgramWhite [
 GLRotationApp >> initialize [
 	super initialize.
 	gl := GLContext new.
-	version := 1.
+	version := 2.
 	self initProgram.
 	self initBuffers.
 	self initMatrices.

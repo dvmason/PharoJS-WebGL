@@ -16,9 +16,11 @@ Class {
 }
 
 { #category : #polyfill }
-GLGlobals class >> browserPolyfill: aStream [
+GLGlobals class >> browserPolyfill: aTranspiler [
 	<pharoJsSkip>
-	super browserPolyfill: aStream.
-	aStream
-		nextPutAll: 'const mat4 = glMatrix.mat4._clone();';cr
+	super browserPolyfill: aTranspiler.
+	aTranspiler
+		nextPutAll: 'const mat4 = glMatrix.mat4.';
+		nextPutAll: aTranspiler pharoJsSelectorPrefix;
+		nextPutAll: 'copy();';cr
 ]
