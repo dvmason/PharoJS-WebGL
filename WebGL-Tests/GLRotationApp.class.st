@@ -1,3 +1,6 @@
+"
+I contain examples from https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Tutorial/Adding_2D_content_to_a_WebGL_context done using PharoJS and WebGL.
+"
 Class {
 	#name : #GLRotationApp,
 	#superclass : #PjWebApplication,
@@ -19,6 +22,12 @@ Class {
 GLRotationApp class >> appJsSubFolder [
 	<pharoJsSkip>
 	^ 'js'
+]
+
+{ #category : #accessing }
+GLRotationApp class >> exportVersion [
+	<jsLiteralGenerator>
+	^ exportVersion
 ]
 
 { #category : #drawing }
@@ -249,7 +258,7 @@ GLRotationApp >> initProgramWhite [
 GLRotationApp >> initialize [
 	super initialize.
 	gl := GLContext new.
-	version := 2.
+	version := self class exportVersion.
 	self initProgram.
 	self initBuffers.
 	self initMatrices.

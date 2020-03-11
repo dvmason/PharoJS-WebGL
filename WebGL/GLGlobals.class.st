@@ -7,7 +7,8 @@ Class {
 	#classVars : [
 		'Float32Array',
 		'Uint16Array',
-		'mat4'
+		'mat4',
+		'vec3'
 	],
 	#pools : [
 		'PjBrowserGlobals'
@@ -21,6 +22,9 @@ GLGlobals class >> browserPolyfill: aTranspiler [
 	super browserPolyfill: aTranspiler.
 	aTranspiler
 		nextPutAll: 'const mat4 = glMatrix.mat4.';
+		nextPutAll: aTranspiler pharoJsSelectorPrefix;
+		nextPutAll: 'copy();';cr;
+		nextPutAll: 'const vec3 = glMatrix.vec3.';
 		nextPutAll: aTranspiler pharoJsSelectorPrefix;
 		nextPutAll: 'copy();';cr
 ]

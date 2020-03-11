@@ -309,6 +309,11 @@ GLContext >> bindElementBuffer: name [
 	gl bindBuffer: ELEMENT_ARRAY_BUFFER buffer: (buffers at: name).
 ]
 
+{ #category : #initialization }
+GLContext >> camera [
+	^ GLCamera new gl: self
+]
+
 { #category : #'webgl-methods' }
 GLContext >> clear [
 	gl clear: COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT.
