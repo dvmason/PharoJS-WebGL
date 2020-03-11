@@ -1,3 +1,9 @@
+# emacs backups
+*~
+
+# generated files
+HTML/*/*/js/index.js
+
 # changes file
 *.changes
 *.chg
