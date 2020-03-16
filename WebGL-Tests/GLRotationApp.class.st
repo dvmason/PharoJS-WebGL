@@ -6,10 +6,10 @@ Class {
 	#superclass : #PjWebApplication,
 	#instVars : [
 		'gl',
-		'projectionMatrix',
 		'modelViewMatrix',
 		'rotatedViewMatrix',
-		'version'
+		'version',
+		'texture'
 	],
 	#pools : [
 		'GLConstants',
@@ -28,6 +28,16 @@ GLRotationApp class >> appJsSubFolder [
 GLRotationApp class >> exportVersion [
 	<jsLiteralGenerator>
 	^ exportVersion
+]
+
+{ #category : #initialization }
+GLRotationApp >> addWarning [
+	| div |
+	div := document createElement: #div.
+	div innerHTML: 'The texture may not show because this is running from a "file:" protocol'.
+	div style: 'font-size: 200%; color: red'.
+	document body appendChild: div.
+
 ]
 
 { #category : #drawing }
@@ -53,24 +63,40 @@ GLRotationApp >> drawScene: rotation [
 			rotate: rotatedViewMatrix
 			from: modelViewMatrix
 			rotation: rotation
-			axis: #(-1 1 0)
-	].
+			axis: #(0 0 1).
+		version >= 4 ifTrue: [
+			mat4
+				rotate: rotatedViewMatrix
+				from: rotatedViewMatrix
+				rotation: rotation * 0.7
+				axis: #(0 1 0)
+	]].
 	gl
 		uniformMatrix4fv: #uModelViewMatrix
 		matrix: rotatedViewMatrix.
 	version < 4 ifTrue: [
-		gl drawArrays: TRIANGLE_STRIP offset: 0 vertexCount: 4
-	] ifFalse: [
+		^ gl drawArrays: TRIANGLE_STRIP offset: 0 vertexCount: 4
+	].
+	version > 4 ifTrue: [
+		gl
+			activeTexture: TEXTURE0; "Tell WebGL we want to affect texture unit 0"
+			bindTexture: TEXTURE_2D with: texture; "Bind the texture to texture unit 0"
+			uniformiAt: #uSampler put: 0 "Tell the shader we bound the texture to texture unit 0"
+	].
+	version >= 4 ifTrue: [
 		gl bindElementBuffer: #index.
-		gl drawElements: TRIANGLES vertexCount: 36 type: UNSIGNED_SHORT offset: 0.
- 	].
-
+		^ gl drawElements: TRIANGLES vertexCount: 36 type: UNSIGNED_SHORT offset: 0
+	].
+	^ self
 ]
 
 { #category : #initialization }
 GLRotationApp >> initBuffers [
-	version <= 3 ifTrue: [ self initBuffers2D ].
-	version > 3 ifTrue: [ self initBuffers3D ].
+	version <= 3 ifTrue: [ ^ self initBuffers2D ].
+	self initBuffers3D.
+	version = 4 ifTrue: [ ^ self initBuffersVertexColoring ].
+	self initBuffersTexture.
+
 
 ]
 
@@ -102,7 +128,6 @@ GLRotationApp >> initBuffers2D [
 
 { #category : #initialization }
 GLRotationApp >> initBuffers3D [
-	| faceColors colors indices |
 	gl
 		createBuffer: #position;
 		arrayBuffer: #position;
@@ -145,6 +170,66 @@ GLRotationApp >> initBuffers3D [
 		);
 		point: #aVertexPosition components: 3.
 
+	gl
+		createBuffer: #index;
+		elementArrayBuffer: #index;
+		fillBuffer: #(
+			0  1  2      0  2  3    " front "
+			4  5  6      4  6  7    " back "
+			8  9  10     8  10 11   " top "
+			12 13 14     12 14 15   " bottom "
+			16 17 18     16 18 19   " right "
+			20 21 22     20 22 23   " left "
+		).
+
+]
+
+{ #category : #initialization }
+GLRotationApp >> initBuffersTexture [
+	| textureCoordinates |
+	textureCoordinates := #(
+    " Front "
+    0.0  0.0
+    0.0  1.0
+    1.0  1.0
+    1.0  0.0
+    " Back "
+    0.0  0.0
+    0.0  1.0
+    1.0  1.0
+    1.0  0.0
+    " Top "
+    0.0  0.0
+    0.0  1.0
+    1.0  1.0
+    1.0  0.0
+    " Bottom "
+    0.0  0.0
+    0.0  1.0
+    1.0  1.0
+    1.0  0.0
+    " Right "
+    0.0  0.0
+    0.0  1.0
+    1.0  1.0
+    1.0  0.0
+    " Left "
+    0.0  0.0
+    0.0  1.0
+    1.0  1.0
+    1.0  0.0
+  ).
+	gl
+		createBuffer: #texture;
+		arrayBuffer: #texture;
+		fillBuffer: textureCoordinates;
+		point: #aTextureCoord components: 2.
+
+]
+
+{ #category : #initialization }
+GLRotationApp >> initBuffersVertexColoring [
+	| faceColors colors |
 	faceColors := "#(white red green blue yellow purple) collect: [: color | Color named: color ]"
 		#(
 			(1.0  1.0  1.0  1.0)    " Front face: white "
@@ -162,23 +247,11 @@ GLRotationApp >> initBuffers3D [
 		fillBuffer: colors;
 		point: #aVertexColor components: 4.
 
-	indices := #(
-		0  1  2      0  2  3    " front "
-		4  5  6      4  6  7    " back "
-		8  9  10     8  10 11   " top "
-		12 13 14     12 14 15   " bottom "
-		16 17 18     16 18 19   " right "
-		20 21 22     20 22 23   " left "
-		).
-	gl
-		createBuffer: #index;
-		elementArrayBuffer: #index;
-		fillBuffer: indices.
-
 ]
 
 { #category : #initialization }
 GLRotationApp >> initMatrices [
+	| projectionMatrix |
 	projectionMatrix := mat4 create.
 	mat4
 		perspective: projectionMatrix
@@ -201,7 +274,36 @@ GLRotationApp >> initMatrices [
 { #category : #initialization }
 GLRotationApp >> initProgram [
 	version = 1 ifTrue: [ ^ self initProgramWhite ].
-	version <= 3 ifTrue: [ ^ self initProgramVertexColoured ].
+	version <= 4 ifTrue: [ ^ self initProgramVertexColoured ].
+	version > 4 ifTrue: [ ^ self initProgramFaceTextured ].
+
+]
+
+{ #category : #initialization }
+GLRotationApp >> initProgramFaceTextured [
+	gl initProgram;
+		varying: #vec2 asGLType highp named: #vTextureCoord;
+		addShader: (
+			GLVertexShader new
+				attribute: #vec4 named: #aVertexPosition;
+				attribute: #vec2 named: #aTextureCoord;
+				uniform: #mat4 named: #uModelViewMatrix;
+				uniform: #mat4 named: #uProjectionMatrix;
+				function: #main;
+				code: 'gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition';
+				code: 'vTextureCoord = aTextureCoord';
+				yourself
+			);
+		addShader: (
+			GLFragmentShader new
+				uniform: #sampler2D named: #uSampler;
+				function: #main;
+				code: 'gl_FragColor = texture2D(uSampler, vTextureCoord)';
+				yourself
+			);
+		linkProgram;
+		useProgram.
+
 ]
 
 { #category : #initialization }
@@ -258,8 +360,13 @@ GLRotationApp >> initProgramWhite [
 GLRotationApp >> initialize [
 	super initialize.
 	gl := GLContext new.
+	console log: gl webGLVersion.
 	version := self class exportVersion.
 	self initProgram.
+	version > 4 ifTrue: [
+		document location protocol = 'file:' ifTrue: [ self addWarning ].
+		texture := gl loadTexture: 'JS.png'.
+	].
 	self initBuffers.
 	self initMatrices.
 	self animate

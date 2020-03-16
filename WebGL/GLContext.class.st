@@ -18,7 +18,8 @@ Class {
 		'programs',
 		'defaultProgram',
 		'attributes',
-		'uniforms'
+		'uniforms',
+		'webGLVersion'
 	],
 	#pools : [
 		'GLConstants',
@@ -35,6 +36,12 @@ GLContext class >> attachShader: program shader: shader [
 
 { #category : #'webgl-methods' }
 GLContext class >> bindBuffer: type buffer: buffer [
+	<pharoJsSkip>
+
+]
+
+{ #category : #'webgl-methods' }
+GLContext class >> bindTexture: notused with: unused [
 	<pharoJsSkip>
 
 ]
@@ -147,6 +154,12 @@ GLContext class >> fromCanvas: canvas [
 ]
 
 { #category : #'webgl-methods' }
+GLContext class >> generateMipmap: unused [
+	<pharoJsSkip>
+
+]
+
+{ #category : #'webgl-methods' }
 GLContext class >> getAttribLocation: program named: aString [
 	<pharoJsSkip>
 
@@ -246,8 +259,45 @@ GLContext class >> shaderSource: shader source: source [
 
 ]
 
+{ #category : #'webgl-methods' }
+GLContext class >> texImage2D: u1
+			level: u2
+			internalFormat: u3
+			srcFormat: u4
+			srcType: u5
+			image: u6 [
+	<pharoJsSkip>
+
+]
+
+{ #category : #'webgl-methods' }
+GLContext class >> texImage2D: u1
+		level: u2
+		internalFormat: u3
+		width: u4
+		height: u5
+		border: u6
+		srcFormat: u7
+		srcType: u8
+		pixel: u9 [
+	<pharoJsSkip>
+
+]
+
+{ #category : #'webgl-methods' }
+GLContext class >> texParameteri: kind at: key put: value [
+	<pharoJsSkip>
+
+]
+
 { #category : #'glmatrix-methods' }
 GLContext class >> translate: toMat4 from: fromMat4 translation: anArray [
+	<pharoJsSkip>
+
+]
+
+{ #category : #'webgl-methods' }
+GLContext class >> uniform1i: position put: value [
 	<pharoJsSkip>
 
 ]
@@ -270,6 +320,11 @@ GLContext class >> vertexAttribPointer: position numComponents: n type: type nor
 
 ]
 
+{ #category : #textures }
+GLContext >> activeTexture: key [
+	^ gl activeTexture: key
+]
+
 { #category : #shaders }
 GLContext >> addShader: aShader [
 	attributes addAll: aShader attributes keys.
@@ -281,14 +336,14 @@ GLContext >> addShader: aShader [
 { #category : #'webgl-methods' }
 GLContext >> animate: aBlock [
 	| then render |
-	then := 0.
+	then := nil.
 	render := [: now | | deltaTime |
 		deltaTime := now - then.
 		then := now.
 		aBlock value: deltaTime.
 		window requestAnimationFrame: render.
 	].
-	window requestAnimationFrame: render.
+	window requestAnimationFrame: [: now | then := now. render value: now].
 
 ]
 
@@ -307,6 +362,11 @@ GLContext >> aspect [
 { #category : #buffers }
 GLContext >> bindElementBuffer: name [
 	gl bindBuffer: ELEMENT_ARRAY_BUFFER buffer: (buffers at: name).
+]
+
+{ #category : #textures }
+GLContext >> bindTexture: kind with: texture [
+	^ gl bindTexture: kind with: texture
 ]
 
 { #category : #initialization }
@@ -350,6 +410,31 @@ GLContext >> elementArrayBuffer: name [
 
 ]
 
+{ #category : #textures }
+GLContext >> emptyTexture [
+	| texture |
+  texture := gl createTexture.
+  gl bindTexture: TEXTURE_2D with: texture.
+
+  " Because images have to be download over the internet
+    they might take a moment until they are ready.
+    Until then put a single pixel in the texture so we can
+    use it immediately. When the image has finished downloading
+    we'll update the texture with the contents of the image. "
+console log: #emptyTexture.
+  gl texImage2D: TEXTURE_2D
+		level: 0
+		internalFormat: RGBA
+		width: 1
+		height: 1
+		border: 0
+		srcFormat: RGBA
+		srcType: UNSIGNED_BYTE
+		pixel: (Uint8Array new: #(0 0 255 255) " opaque blue").
+  ^ texture
+
+]
+
 { #category : #'webgl-methods' }
 GLContext >> enableVertexAttribArray: position [
 	gl enableVertexAttribArray: (position isString ifTrue: [ self ref: position ] ifFalse: [ position ]).
@@ -365,7 +450,8 @@ GLContext >> fillBuffer: positions [
 GLContext >> fromCanvas: selector [
 	| canvas |
 	canvas := document getElementById: selector.
-	gl := canvas getContext: #webgl.
+	webGLVersion := 2.
+	gl := (canvas getContext: #webgl2) ifNil: [ webGLVersion := 1. canvas getContext: #webgl ].
 	gl ifNil: [ ^ self error: 'Unable to initialize WebGL. Your browser or machine may not support it.' ].
 	GLConstants loadConstants: gl.
 	gl clearColor: 0 green: 0.3 blue: 0 alpha: 1.
@@ -417,6 +503,40 @@ GLContext >> linkProgram [
 
 ]
 
+{ #category : #textures }
+GLContext >> loadTexture: url [
+	| texture image |
+	texture := self emptyTexture.
+	image := Image new.
+	image addEventListener: #load block: [
+		console log: #loadTexture.
+		gl
+			bindTexture: TEXTURE_2D with: texture;
+    		texImage2D: TEXTURE_2D
+				level: 0
+				internalFormat: RGBA
+				srcFormat: RGBA
+				srcType: UNSIGNED_BYTE
+				image: image.
+
+    " WebGL1 has different requirements for power of 2 images
+      vs non power of 2 images so check if the image is a
+      power of 2 in both dimensions. "
+    (self webGLVersion > 1 or: [image width isPowerOfTwo & image height isPowerOfTwo]) ifTrue: [
+       gl generateMipmap: TEXTURE_2D.
+    ] ifFalse: [
+       " No, it's not a power of 2. Turn off mips and set wrapping to clamp to edge "
+       gl texParameteri: TEXTURE_2D at: TEXTURE_WRAP_S put: CLAMP_TO_EDGE.
+       gl texParameteri: TEXTURE_2D at: TEXTURE_WRAP_T put: CLAMP_TO_EDGE.
+       gl texParameteri: TEXTURE_2D at: TEXTURE_MIN_FILTER put: LINEAR.
+    ]
+  ].
+  image src: url.
+
+  ^ texture
+
+]
+
 { #category : #buffers }
 GLContext >> point: position components: n [
 	| pos |
@@ -450,6 +570,11 @@ GLContext >> uniformMatrix4fv: position transpose: bool matrix: matrix [
 		matrix: matrix.
 ]
 
+{ #category : #'webgl-methods' }
+GLContext >> uniformiAt: position put: value [
+	gl uniform1i: (position isString ifTrue: [ self ref: position ] ifFalse: [ position ]) put: value
+]
+
 { #category : #shaders }
 GLContext >> useProgram [
 	self useProgram: currentProgramName.
@@ -476,4 +601,9 @@ GLContext >> vertexAttribPointer: position numComponents: n type: type normalize
 		normalize: bool
 		stride: stride
 		offset: offset
+]
+
+{ #category : #accessing }
+GLContext >> webGLVersion [
+	^ webGLVersion
 ]

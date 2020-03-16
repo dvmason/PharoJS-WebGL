@@ -5,8 +5,6 @@ Class {
 	#name : #GLGlobals,
 	#superclass : #PjJavascriptGlobals,
 	#classVars : [
-		'Float32Array',
-		'Uint16Array',
 		'mat4',
 		'vec3'
 	],

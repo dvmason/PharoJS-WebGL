@@ -14,7 +14,7 @@ ManifestWebGL class >> ruleGRClassVariableCapitalizationRuleV1FalsePositive [
 
 { #category : #'code-critics' }
 ManifestWebGL class >> ruleRBExcessiveArgumentsRuleV1FalsePositive [
-	^ #(#(#(#RGMethodDefinition #(#GLContext #vertexAttribPointer:numComponents:type:normalize:stride:offset: #false)) #'2020-01-05T08:37:06.467923-05:00') )
+	^ #(#(#(#RGMethodDefinition #(#GLContext #vertexAttribPointer:numComponents:type:normalize:stride:offset: #false)) #'2020-01-05T08:37:06.467923-05:00') #(#(#RGMethodDefinition #(#'GLContext class' #texImage2D:level:internalFormat:width:height:border:srcFormat:srcType:pixel: #true)) #'2020-03-13T19:14:32.513869-04:00') )
 ]
 
 { #category : #'code-critics' }
