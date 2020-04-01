@@ -19,7 +19,8 @@ Class {
 		'defaultProgram',
 		'attributes',
 		'uniforms',
-		'webGLVersion'
+		'webGLVersion',
+		'glObjects'
 	],
 	#pools : [
 		'GLConstants',
@@ -150,6 +151,7 @@ GLContext class >> enableVertexAttribArray: position [
 
 { #category : #'instance creation' }
 GLContext class >> fromCanvas: canvas [
+	console log: (GLFloat32Array x: 1 y: 2 z: 4).
 	^ super new fromCanvas: canvas
 ]
 
@@ -325,6 +327,13 @@ GLContext >> activeTexture: key [
 	^ gl activeTexture: key
 ]
 
+{ #category : #rendering }
+GLContext >> addObject: aGlObject [
+	aGlObject gl: self.
+	glObjects add: aGlObject.
+
+]
+
 { #category : #shaders }
 GLContext >> addShader: aShader [
 	attributes addAll: aShader attributes keys.
@@ -333,12 +342,27 @@ GLContext >> addShader: aShader [
 
 ]
 
-{ #category : #'webgl-methods' }
+{ #category : #rendering }
+GLContext >> animate [
+	| then render |
+	render := then := nil.
+	render := [: now | | deltaTime |
+		deltaTime := 0.001*(now - then).
+		then := now.
+		self clear.
+		glObjects do: [: object | object draw: deltaTime ].
+		window requestAnimationFrame: render.
+	].
+	window requestAnimationFrame: [: now | then := now. render value: now].
+
+]
+
+{ #category : #rendering }
 GLContext >> animate: aBlock [
 	| then render |
-	then := nil.
+	render := then := nil.
 	render := [: now | | deltaTime |
-		deltaTime := now - then.
+		deltaTime := (now - then).
 		then := now.
 		aBlock value: deltaTime.
 		window requestAnimationFrame: render.
@@ -485,6 +509,8 @@ GLContext >> initialize [
 	defaultProgram := 0.
 	buffers := Dictionary new.
 	programs := Dictionary new.
+	glObjects := OrderedCollection new.
+
 
 ]
 

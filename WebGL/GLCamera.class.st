@@ -38,32 +38,34 @@ GLCamera >> gl: aGlContext [
 { #category : #initialization }
 GLCamera >> initialize [
 	super initialize.
-	position := vec3 x: 0 y: 0 z: 0.
-	worldUp := vec3 x: 0 y: 0 z: 0.
+	position := GLFloat32Array x: 0 y: 0 z: 0.
+	worldUp := GLFloat32Array x: 0 y: 0 z: 0.
 	self
 		yaw: -90;
-		pitch: 0.
-	speed := 2.5.
-	sensitivity := 0.1.
-	zoom := 45.
-	self cameraTransform.
+		pitch: 0;
+		speed: 2.5;
+		sensitivity: 0.1;
+		zoom: 45.
 
 ]
 
-{ #category : #initialization }
+{ #category : #accessing }
 GLCamera >> pitch: v [
 	pitch := (v min: 89) max: -89.
+	cameraTransform := nil.
 
 ]
 
-{ #category : #initialization }
+{ #category : #accessing }
 GLCamera >> yaw: v [
 	yaw := v.
+	cameraTransform := nil.
 
 ]
 
-{ #category : #initialization }
+{ #category : #accessing }
 GLCamera >> zoom: v [
 	zoom := (v min: 45) max: 150.
+	cameraTransform := nil.
 
 ]
