@@ -16,7 +16,7 @@ Class {
 	#pools : [
 		'GLConstants'
 	],
-	#category : #'WebGL-Kernel'
+	#category : #'WebGL-Programs'
 }
 
 { #category : #'as yet unclassified' }
@@ -77,15 +77,17 @@ GLShadingLanguage >> code: aString [
 
 { #category : #construction }
 GLShadingLanguage >> compileWithGL: gl andVarying: varyings [
-	| shader msg |
+	| shader msg source |
 	shader := gl createShader: self shaderType.
-	gl shaderSource: shader source: (self asString: varyings).
+	self halt.
+	source := self asString: varyings.
+	gl shaderSource: shader source: source.
 	gl compileShader: shader.
 	(gl getShaderParameter: shader parameter: COMPILE_STATUS)
 		ifFalse: [ msg := 'An error occurred compiling the shader: '
 				, (gl getShaderInfoLog: shader).
 			gl deleteShader: shader.
-			^ self error: msg ].
+			self error: msg ].
 	^ shader
 ]
 

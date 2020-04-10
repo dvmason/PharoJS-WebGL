@@ -4,7 +4,7 @@ I am a GL fragment shader
 Class {
 	#name : #GLFragmentShader,
 	#superclass : #GLShadingLanguage,
-	#category : #'WebGL-Kernel'
+	#category : #'WebGL-Programs'
 }
 
 { #category : #accessing }

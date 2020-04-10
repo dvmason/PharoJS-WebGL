@@ -7,7 +7,7 @@ Class {
 	#type : #words,
 	#traits : 'GLNativeArray',
 	#classTraits : 'GLNativeArray classTrait',
-	#category : #'WebGL-Kernel'
+	#category : #'WebGL-Programs'
 }
 
 { #category : #'pharoJs support' }

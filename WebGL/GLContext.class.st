@@ -7,20 +7,11 @@ Class {
 	#name : #GLContext,
 	#superclass : #Object,
 	#instVars : [
-		'gl',
-		'shaderProgram',
-		'references',
-		'positionBuffer',
-		'buffers',
-		'bufferType',
-		'varyings',
-		'currentProgramName',
-		'programs',
-		'defaultProgram',
-		'attributes',
-		'uniforms',
 		'webGLVersion',
-		'glObjects'
+		'camera',
+		'fps',
+		'programs',
+		'webGL'
 	],
 	#pools : [
 		'GLConstants',
@@ -96,7 +87,7 @@ GLContext class >> createBuffer [
 ]
 
 { #category : #'webgl-methods' }
-GLContext class >> createProgram [
+GLContext class >> createProgram: anObject [
 	<pharoJsSkip>
 
 ]
@@ -324,121 +315,93 @@ GLContext class >> vertexAttribPointer: position numComponents: n type: type nor
 
 { #category : #textures }
 GLContext >> activeTexture: key [
-	^ gl activeTexture: key
+	^ webGL activeTexture: key
 ]
 
 { #category : #rendering }
 GLContext >> addObject: aGlObject [
 	aGlObject gl: self.
-	glObjects add: aGlObject.
-
-]
-
-{ #category : #shaders }
-GLContext >> addShader: aShader [
-	attributes addAll: aShader attributes keys.
-	uniforms addAll: aShader uniforms keys.
-	gl attachShader: shaderProgram shader: (self compileShaderInContext: aShader).
-
+	(programs add: aGlObject program) addObject: aGlObject
 ]
 
 { #category : #rendering }
 GLContext >> animate [
-	| then render |
+	| then render total |
 	render := then := nil.
+	total := 0.
 	render := [: now | | deltaTime |
 		deltaTime := 0.001*(now - then).
+		fps := 1.0 / deltaTime.
 		then := now.
 		self clear.
-		glObjects do: [: object | object draw: deltaTime ].
+		total := total + deltaTime.
+		programs do: [ : aGLProgram |
+				aGLProgram drawDelta: deltaTime total: total.
+		].
 		window requestAnimationFrame: render.
 	].
 	window requestAnimationFrame: [: now | then := now. render value: now].
-
-]
-
-{ #category : #rendering }
-GLContext >> animate: aBlock [
-	| then render |
-	render := then := nil.
-	render := [: now | | deltaTime |
-		deltaTime := (now - then).
-		then := now.
-		aBlock value: deltaTime.
-		window requestAnimationFrame: render.
-	].
-	window requestAnimationFrame: [: now | then := now. render value: now].
-
-]
-
-{ #category : #buffers }
-GLContext >> arrayBuffer: name [
-	bufferType := ARRAY_BUFFER.
-	gl bindBuffer: bufferType buffer: (buffers at: name).
 
 ]
 
 { #category : #accessing }
 GLContext >> aspect [
-	^ gl drawingBufferWidth / gl drawingBufferHeight
+	^ webGL drawingBufferWidth / webGL drawingBufferHeight
 ]
 
-{ #category : #buffers }
-GLContext >> bindElementBuffer: name [
-	gl bindBuffer: ELEMENT_ARRAY_BUFFER buffer: (buffers at: name).
+{ #category : #shaders }
+GLContext >> attachShader: program shader: shader [
+	^ webGL attachShader: program shader: shader
 ]
 
 { #category : #textures }
 GLContext >> bindTexture: kind with: texture [
-	^ gl bindTexture: kind with: texture
+	^ webGL bindTexture: kind with: texture
 ]
 
 { #category : #initialization }
 GLContext >> camera [
-	^ GLCamera new gl: self
+	^ camera ifNil: [ camera := GLCamera new gl: self ]
 ]
 
 { #category : #'webgl-methods' }
 GLContext >> clear [
-	gl clear: COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT.
+	webGL clear: COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT.
 
 ]
 
 { #category : #shaders }
-GLContext >> compileShaderInContext: aShader [
-	^ aShader compileWithGL: gl andVarying: varyings.
-
+GLContext >> compileShader: shader [
+	^ webGL compileShader: shader
 ]
 
 { #category : #buffers }
-GLContext >> createBuffer: name [
-	buffers at: name put: gl createBuffer
+GLContext >> createProgram [
+	^ GLProgram new shaderProgram: webGL createProgram webGL: webGL
+]
+
+{ #category : #shaders }
+GLContext >> createShader: type [
+	^ webGL createShader: type
 ]
 
 { #category : #'webgl-methods' }
 GLContext >> drawArrays: type offset: offset vertexCount: count [
-	gl drawArrays: type offset: offset vertexCount: count.
+	webGL drawArrays: type offset: offset vertexCount: count.
 
 ]
 
 { #category : #'webgl-methods' }
 GLContext >> drawElements: drawOp vertexCount: count type: type offset: offset [
-	gl drawElements: drawOp vertexCount: count type: type offset: offset.
-
-]
-
-{ #category : #buffers }
-GLContext >> elementArrayBuffer: name [
-	bufferType := ELEMENT_ARRAY_BUFFER.
-	gl bindBuffer: bufferType buffer: (buffers at: name).
+	webGL drawElements: drawOp vertexCount: count type: type offset: offset.
 
 ]
 
 { #category : #textures }
 GLContext >> emptyTexture [
 	| texture |
-  texture := gl createTexture.
-  gl bindTexture: TEXTURE_2D with: texture.
+  texture := webGL createTexture.
+  webGL bindTexture: TEXTURE_2D with: texture.
 
   " Because images have to be download over the internet
     they might take a moment until they are ready.
@@ -446,7 +409,7 @@ GLContext >> emptyTexture [
     use it immediately. When the image has finished downloading
     we'll update the texture with the contents of the image. "
 console log: #emptyTexture.
-  gl texImage2D: TEXTURE_2D
+  webGL texImage2D: TEXTURE_2D
 		level: 0
 		internalFormat: RGBA
 		width: 1
@@ -459,73 +422,30 @@ console log: #emptyTexture.
 
 ]
 
-{ #category : #'webgl-methods' }
-GLContext >> enableVertexAttribArray: position [
-	gl enableVertexAttribArray: (position isString ifTrue: [ self ref: position ] ifFalse: [ position ]).
-]
-
-{ #category : #buffers }
-GLContext >> fillBuffer: positions [
-	gl bufferData: bufferType buffer: ((bufferType = ARRAY_BUFFER ifTrue: [Float32Array] ifFalse: [Uint16Array]) new: positions) kind: STATIC_DRAW.
-
-]
-
 { #category : #initialization }
 GLContext >> fromCanvas: selector [
 	| canvas |
 	canvas := document getElementById: selector.
 	webGLVersion := 2.
-	gl := (canvas getContext: #webgl2) ifNil: [ webGLVersion := 1. canvas getContext: #webgl ].
-	gl ifNil: [ ^ self error: 'Unable to initialize WebGL. Your browser or machine may not support it.' ].
-	GLConstants loadConstants: gl.
-	gl clearColor: 0 green: 0.3 blue: 0 alpha: 1.
-	gl clearDepth: 1.
-	gl enable: DEPTH_TEST.
-	gl depthFunc: LEQUAL.
+	webGL := (canvas getContext: #webgl2) ifNil: [ webGLVersion := 1. canvas getContext: #webgl ].
+	webGL ifNil: [ self error: 'Unable to initialize WebGL. Your browser or machine may not support it.' ].
+	GLConstants loadConstants: webGL.
+	webGL clearColor: 0 green: 0.3 blue: 0 alpha: 1.
+	webGL clearDepth: 1.
+	webGL enable: DEPTH_TEST.
+	webGL depthFunc: LEQUAL.
 
 ]
 
 { #category : #shaders }
-GLContext >> initProgram [
-	defaultProgram := defaultProgram + 1.
-	^ self initProgramNamed: #defaultProgram, defaultProgram asString
-]
-
-{ #category : #shaders }
-GLContext >> initProgramNamed: aString [
-	currentProgramName := aString.
-	shaderProgram := gl createProgram.
-	programs at: currentProgramName put: shaderProgram.
-	varyings := Dictionary new.
-	references := Dictionary new.
-	attributes := OrderedCollection new.
-	uniforms := OrderedCollection new.
-
+GLContext >> getShaderParameter: program parameter: parameter [
+	^ webGL getShaderParameter: program parameter: parameter
 ]
 
 { #category : #initialization }
 GLContext >> initialize [
 	super initialize.
-	defaultProgram := 0.
-	buffers := Dictionary new.
-	programs := Dictionary new.
-	glObjects := OrderedCollection new.
-
-
-]
-
-{ #category : #shaders }
-GLContext >> linkProgram [
-	gl linkProgram: shaderProgram.
-	(gl getProgramParameter: shaderProgram parameter: LINK_STATUS) ifFalse: [
-		^ self error: 'An error occurred compiling the shaders: ',(gl getProgramInfoLog: shaderProgram)
-	].
-	attributes do: [: name |
-		references at: name put: (gl getAttribLocation: shaderProgram named: name)
-	].
-	uniforms do: [: name |
-		references at: name put: (gl getUniformLocation: shaderProgram named: name)
-	].
+	programs := IdentitySet new.
 
 ]
 
@@ -536,7 +456,7 @@ GLContext >> loadTexture: url [
 	image := Image new.
 	image addEventListener: #load block: [
 		console log: #loadTexture.
-		gl
+		webGL
 			bindTexture: TEXTURE_2D with: texture;
     		texImage2D: TEXTURE_2D
 				level: 0
@@ -549,12 +469,12 @@ GLContext >> loadTexture: url [
       vs non power of 2 images so check if the image is a
       power of 2 in both dimensions. "
     (self webGLVersion > 1 or: [image width isPowerOfTwo & image height isPowerOfTwo]) ifTrue: [
-       gl generateMipmap: TEXTURE_2D.
+       webGL generateMipmap: TEXTURE_2D.
     ] ifFalse: [
        " No, it's not a power of 2. Turn off mips and set wrapping to clamp to edge "
-       gl texParameteri: TEXTURE_2D at: TEXTURE_WRAP_S put: CLAMP_TO_EDGE.
-       gl texParameteri: TEXTURE_2D at: TEXTURE_WRAP_T put: CLAMP_TO_EDGE.
-       gl texParameteri: TEXTURE_2D at: TEXTURE_MIN_FILTER put: LINEAR.
+       webGL texParameteri: TEXTURE_2D at: TEXTURE_WRAP_S put: CLAMP_TO_EDGE.
+       webGL texParameteri: TEXTURE_2D at: TEXTURE_WRAP_T put: CLAMP_TO_EDGE.
+       webGL texParameteri: TEXTURE_2D at: TEXTURE_MIN_FILTER put: LINEAR.
     ]
   ].
   image src: url.
@@ -563,70 +483,25 @@ GLContext >> loadTexture: url [
 
 ]
 
-{ #category : #buffers }
-GLContext >> point: position components: n [
-	| pos |
-	pos := (position isString ifTrue: [ self ref: position ] ifFalse: [ position ]).
-	gl vertexAttribPointer: pos
-		numComponents: n
-		type: FLOAT
-		normalize: false
-		stride: 0
-		offset: 0.
-	gl enableVertexAttribArray: pos.
-
-]
-
-{ #category : #accessing }
-GLContext >> ref: name [
-	^ references at: name
-]
-
-{ #category : #'webgl-methods' }
-GLContext >> uniformMatrix4fv: position matrix: matrix [
-	gl uniformMatrix4fv: (position isString ifTrue: [ self ref: position ] ifFalse: [ position ])
-		transpose: false
-		matrix: matrix.
-]
-
-{ #category : #'webgl-methods' }
-GLContext >> uniformMatrix4fv: position transpose: bool matrix: matrix [
-	gl uniformMatrix4fv: (position isString ifTrue: [ self ref: position ] ifFalse: [ position ])
-		transpose: bool
-		matrix: matrix.
-]
-
-{ #category : #'webgl-methods' }
-GLContext >> uniformiAt: position put: value [
-	gl uniform1i: (position isString ifTrue: [ self ref: position ] ifFalse: [ position ]) put: value
-]
-
-{ #category : #shaders }
-GLContext >> useProgram [
-	self useProgram: currentProgramName.
+{ #category : #rendering }
+GLContext >> removeObject: aGlObject [
+	(programs like: aGlObject program) ifNotNil: [ : program |
+		program removeObject: aGlObject.
+		program empty ifTrue: [
+			programs removeKey: program ifAbsent: []].
+	].
 
 ]
 
 { #category : #shaders }
-GLContext >> useProgram: aString [
-	gl useProgram: (programs at: aString).
-
+GLContext >> shaderSource: shader source: source [
+	^ webGL shaderSource: shader source: source
 ]
 
 { #category : #shaders }
-GLContext >> varying: type named: name [ 
-	varyings at: name put: type asGLType.
- 
-]
+GLContext >> useProgram: aWebGLProgram [
+	webGL useProgram: aWebGLProgram.
 
-{ #category : #'webgl-methods' }
-GLContext >> vertexAttribPointer: position numComponents: n type: type normalize: bool stride: stride offset: offset [
-	gl vertexAttribPointer: (position isString ifTrue: [ self ref: position ] ifFalse: [ position ])
-		numComponents: n
-		type: type
-		normalize: bool
-		stride: stride
-		offset: offset
 ]
 
 { #category : #accessing }

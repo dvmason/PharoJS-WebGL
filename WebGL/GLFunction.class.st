@@ -11,7 +11,7 @@ Class {
 		'locals',
 		'parameters'
 	],
-	#category : #'WebGL-Kernel'
+	#category : #'WebGL-Programs'
 }
 
 { #category : #converting }

@@ -19,7 +19,7 @@ GLContextForTest >> compileShader: aGLContextForTest [
 ]
 
 { #category : #'mock for WebGL' }
-GLContextForTest >> createProgram [
+GLContextForTest >> createProgram: anObject [
 
 ]
 
@@ -29,7 +29,7 @@ GLContextForTest >> createShader: anUndefinedObject [
 
 { #category : #initialization }
 GLContextForTest >> fromCanvas: unused [
-	gl := self.
+	webGL := self.
 
 ]
 

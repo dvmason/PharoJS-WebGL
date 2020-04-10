@@ -70,20 +70,20 @@ GLRotationCube >> drawScene: rotation [
 				rotation: rotation * 0.7
 				axis: #(0 1 0)
 	]].
-	gl
+	program
 		uniformMatrix4fv: #uModelViewMatrix
 		matrix: rotatedViewMatrix.
 	version < 4 ifTrue: [
 		^ gl drawArrays: TRIANGLE_STRIP offset: 0 vertexCount: 4
 	].
 	version > 4 ifTrue: [
-		gl
+		program
 			activeTexture: TEXTURE0; "Tell WebGL we want to affect texture unit 0"
 			bindTexture: TEXTURE_2D with: texture; "Bind the texture to texture unit 0"
 			uniformiAt: #uSampler put: 0 "Tell the shader we bound the texture to texture unit 0"
 	].
 	version >= 4 ifTrue: [
-		gl bindElementBuffer: #index.
+		program bindElementBuffer: #index.
 		^ gl drawElements: TRIANGLES vertexCount: 36 type: UNSIGNED_SHORT offset: 0
 	].
 	^ self

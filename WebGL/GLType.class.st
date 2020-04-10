@@ -7,7 +7,7 @@ Class {
 	#instVars : [
 		'strings'
 	],
-	#category : #'WebGL-Kernel'
+	#category : #'WebGL-Programs'
 }
 
 { #category : #'instance creation' }

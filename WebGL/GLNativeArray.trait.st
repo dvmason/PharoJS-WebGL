@@ -5,7 +5,7 @@ Trait {
 	#name : #GLNativeArray,
 	#traits : 'PjTArray + PjTExtensionClass',
 	#classTraits : 'PjTArray classTrait + PjTExtensionClass classTrait',
-	#category : #'WebGL-Kernel'
+	#category : #'WebGL-Programs'
 }
 
 { #category : #'as yet unclassified' }
