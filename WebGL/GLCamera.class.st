@@ -5,7 +5,6 @@ Class {
 	#name : #GLCamera,
 	#superclass : #Object,
 	#instVars : [
-		'gl',
 		'position',
 		'worldUp',
 		'yaw',
@@ -13,7 +12,8 @@ Class {
 		'speed',
 		'sensitivity',
 		'zoom',
-		'cameraTransform'
+		'cameraTransform',
+		'program'
 	],
 	#pools : [
 		'GLConstants',
@@ -24,14 +24,17 @@ Class {
 
 { #category : #accessing }
 GLCamera >> cameraTransform [
-	^ cameraTransform ifNil: [
-			cameraTransform := nil
-		]
-]
-
-{ #category : #initialization }
-GLCamera >> gl: aGlContext [
-	gl := aGlContext.
+	| projectionMatrix |
+	projectionMatrix := mat4 create.
+	mat4
+		perspective: projectionMatrix
+		fieldOfView: 45 degreesToRadians
+		aspect: program aspect
+		near: 0.1
+		far: 100.
+	program
+		uniformMatrix4fv: #uProjectionMatrix
+		matrix: projectionMatrix.
 
 ]
 
@@ -53,6 +56,12 @@ GLCamera >> initialize [
 GLCamera >> pitch: v [
 	pitch := (v min: 89) max: -89.
 	cameraTransform := nil.
+
+]
+
+{ #category : #accessing }
+GLCamera >> program: aGLProgram [
+	program := aGLProgram.
 
 ]
 

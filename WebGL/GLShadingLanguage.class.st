@@ -79,7 +79,6 @@ GLShadingLanguage >> code: aString [
 GLShadingLanguage >> compileWithGL: gl andVarying: varyings [
 	| shader msg source |
 	shader := gl createShader: self shaderType.
-	self halt.
 	source := self asString: varyings.
 	gl shaderSource: shader source: source.
 	gl compileShader: shader.

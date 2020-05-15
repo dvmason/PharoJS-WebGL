@@ -11,8 +11,8 @@ Class {
 	#category : #'WebGL-Tests-Examples'
 }
 
-{ #category : #initialization }
-GLLevel4 >> initBuffers3D [
+{ #category : #rendering }
+GLLevel4 class >> initBuffers3D: program [
 	program createBuffer: #position then: [
 		program
 			arrayBuffer: #position;
@@ -71,8 +71,8 @@ GLLevel4 >> initBuffers3D [
 
 ]
 
-{ #category : #initialization }
-GLLevel4 >> initBuffersVertexColoring [
+{ #category : #rendering }
+GLLevel4 class >> initBuffersVertexColoring: program [
 	| faceColors colors |
 	faceColors := "#(white red green blue yellow purple) collect: [: color | Color named: color ]"
 		#(
@@ -94,10 +94,9 @@ GLLevel4 >> initBuffersVertexColoring [
 
 ]
 
-{ #category : #initialization }
-GLLevel4 >> initializeGL [
-	document location protocol = 'file:' ifTrue: [ self addWarning ].
-	self initBuffers3D.
-	self initBuffersVertexColoring.
+{ #category : #rendering }
+GLLevel4 class >> initializeGL: program [
+	self initBuffers3D: program.
+	self initBuffersVertexColoring: program.
 
 ]

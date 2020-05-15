@@ -26,7 +26,7 @@ Class {
 
 { #category : #accessing }
 GLProgram >> addObject: aGlObject [
-	aGlObject initializeGL.
+	aGlObject program: self;initializeStatic.
 	(classes at: aGlObject class name ifAbsentPut: [ OrderedCollection new ]) add: aGlObject.
 
 ]
@@ -61,19 +61,33 @@ GLProgram >> compileShaderInContext: aShader [
 GLProgram >> createBuffer: name then: aBlock [
 	| buffer |
 	(buffers includesKey: name)
-		ifFalse: [ self error: 'Buffer ',name,' already created' ].
+		ifTrue: [ self error: 'Buffer ',name,' already created' ].
 	buffer := webGL createBuffer.
 	buffers at: name put: buffer.
 	aBlock value: buffer
 ]
 
+{ #category : #'webgl-methods' }
+GLProgram >> drawArrays: type offset: offset vertexCount: count [
+self halt.
+	webGL drawArrays: type offset: offset vertexCount: count.
+
+]
+
 { #category : #shaders }
 GLProgram >> drawDelta: deltaTime total: total [
+	webGL useProgram: shaderProgram.
 	classes valuesDo: [: instances |
 		instances first class setupForDraw: self.
 		instances do: [: instance |
 			instance drawDelta: deltaTime total: total.
 	]].
+
+]
+
+{ #category : #'webgl-methods' }
+GLProgram >> drawElements: drawOp vertexCount: count type: type offset: offset [
+	webGL drawElements: drawOp vertexCount: count type: type offset: offset.
 
 ]
 
@@ -117,11 +131,14 @@ GLProgram >> linkProgram [
 	| loc |
 	webGL linkProgram: shaderProgram.
 	(webGL getProgramParameter: shaderProgram parameter: LINK_STATUS) ifFalse: [
-		self error: 'An error occurred compiling the shaders: ',(webGL getProgramInfoLog: shaderProgram)
+		^ self error: 'An error occurred compiling the shaders: ',(webGL getProgramInfoLog: shaderProgram)
 	].
-	attributes,uniforms do: [: name |
+	attributes do: [: name |
 		loc := webGL getAttribLocation: shaderProgram named: name.
-		loc = -1 ifTrue: [ self halt. ^ self error: 'Non-existent attribute ',name ].
+		references at: name put: loc.
+	].
+	uniforms do: [: name |
+		loc := webGL getUniformLocation: shaderProgram named: name.
 		references at: name put: loc.
 	].
 
@@ -144,6 +161,13 @@ GLProgram >> point: position components: n [
 { #category : #accessing }
 GLProgram >> program [
 	^ shaderProgram.
+
+]
+
+{ #category : #shaders }
+GLProgram >> programClass: aClass [
+	aClass createProgram: self.
+	aClass initializeProgram: self.
 
 ]
 

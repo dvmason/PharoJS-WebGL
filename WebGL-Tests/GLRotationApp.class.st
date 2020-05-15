@@ -35,7 +35,7 @@ GLRotationApp >> start [
 	version := self class exportVersion.
 	{GLLevel1 . GLLevel1 . GLLevel1} withIndexDo: [: level : position |
 		position > version ifTrue: [ ^ self ].
-		angle := 360 degreesToRadians / version * (position + 1).
+		angle := 360 degreesToRadians / (version + 1) * position.
 		gl addObject: (level new translateX: -0.5 - angle sin y: angle cos z: 0).
 	]
 

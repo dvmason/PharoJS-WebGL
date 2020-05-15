@@ -20,7 +20,7 @@ GLLevel3 >> drawDelta: secondsSinceLastDraw total: secondsSinceProgramStart [
 		axis: #(0 0 1).
 	program
 		uniformMatrix4fv: #uModelViewMatrix
-		matrix: rotatedViewMatrix.
-	gl drawArrays: TRIANGLE_STRIP offset: 0 vertexCount: 4
+		matrix: rotatedViewMatrix;
+		drawArrays: TRIANGLE_STRIP offset: 0 vertexCount: 4
 
 ]

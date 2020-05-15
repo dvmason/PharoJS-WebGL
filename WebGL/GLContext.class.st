@@ -320,22 +320,21 @@ GLContext >> activeTexture: key [
 
 { #category : #rendering }
 GLContext >> addObject: aGlObject [
-	aGlObject gl: self.
-	(programs add: aGlObject program) addObject: aGlObject
+	(self programFor: aGlObject) addObject: aGlObject
 ]
 
 { #category : #rendering }
 GLContext >> animate [
 	| then render total |
 	render := then := nil.
-	total := 0.
+	total := fps := 0.
 	render := [: now | | deltaTime |
 		deltaTime := 0.001*(now - then).
-		fps := 1.0 / deltaTime.
+		deltaTime > 0 ifTrue: [fps := 1.0 / deltaTime.		console log: fps].
 		then := now.
 		self clear.
 		total := total + deltaTime.
-		programs do: [ : aGLProgram |
+		programs valuesDo: [ : aGLProgram |
 				aGLProgram drawDelta: deltaTime total: total.
 		].
 		window requestAnimationFrame: render.
@@ -383,18 +382,6 @@ GLContext >> createProgram [
 { #category : #shaders }
 GLContext >> createShader: type [
 	^ webGL createShader: type
-]
-
-{ #category : #'webgl-methods' }
-GLContext >> drawArrays: type offset: offset vertexCount: count [
-	webGL drawArrays: type offset: offset vertexCount: count.
-
-]
-
-{ #category : #'webgl-methods' }
-GLContext >> drawElements: drawOp vertexCount: count type: type offset: offset [
-	webGL drawElements: drawOp vertexCount: count type: type offset: offset.
-
 ]
 
 { #category : #textures }
@@ -445,7 +432,9 @@ GLContext >> getShaderParameter: program parameter: parameter [
 { #category : #initialization }
 GLContext >> initialize [
 	super initialize.
-	programs := IdentitySet new.
+	programs := Dictionary new.
+	self animate.
+
 
 ]
 
@@ -484,7 +473,18 @@ GLContext >> loadTexture: url [
 ]
 
 { #category : #rendering }
+GLContext >> programFor: aGlObject [
+	| programClass |
+	programClass := aGlObject class programClass.
+	^ programs at: programClass name ifAbsentPut: [
+			self createProgram programClass: programClass
+		]
+	
+]
+
+{ #category : #rendering }
 GLContext >> removeObject: aGlObject [
+	self flag: #theTypesHaveChanged.
 	(programs like: aGlObject program) ifNotNil: [ : program |
 		program removeObject: aGlObject.
 		program empty ifTrue: [

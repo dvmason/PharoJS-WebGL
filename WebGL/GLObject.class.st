@@ -5,34 +5,35 @@ Class {
 	#name : #GLObject,
 	#superclass : #Object,
 	#instVars : [
-		'gl',
 		'program'
 	],
 	#pools : [
 		'GLConstants',
 		'GLGlobals'
 	],
-	#classInstVars : [
-		'program'
-	],
 	#category : #'WebGL-Kernel'
 }
 
 { #category : #rendering }
-GLObject class >> createProgram: gl [
+GLObject class >> createProgram: program [
 	^ self subclassResponsibility
 ]
 
+{ #category : #rendering }
+GLObject class >> initializeProgram: program [
+
+]
+
 { #category : #accessing }
-GLObject class >> program: gl [
-	^ program
-		ifNil: [ program := (self hasClassMethod: #createProgram:)
-				ifTrue: [ self createProgram: gl ]
-				ifFalse: [ self superclass program: gl ] ]
+GLObject class >> programClass [
+	^ ((self hasClassMethod: #createProgram:) or: [ self hasClassMethod: #initializeProgram: ] )
+				ifTrue: [ self ]
+				ifFalse: [ self superclass programClass ]
 ]
 
 { #category : #rendering }
-GLObject class >> setupForDraw [
+GLObject class >> setupForDraw: program [
+
 ]
 
 { #category : #rendering }
@@ -42,20 +43,12 @@ GLObject >> drawDelta: secondsSinceLastDraw total: secondsSinceProgramStart [
 ]
 
 { #category : #accessing }
-GLObject >> gl: aGLContext [
-	gl := aGLContext.
-
-]
-
-{ #category : #initialization }
 GLObject >> initializeGL [
-	^ self subclassResponsibility
-
 ]
 
 { #category : #accessing }
-GLObject >> program [
-	^ program ifNil: [ program := self class program: gl ]
+GLObject >> program: aGLProgram [
+	program := aGLProgram
 ]
 
 { #category : #accessing }

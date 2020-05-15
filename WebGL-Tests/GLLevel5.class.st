@@ -18,6 +18,16 @@ Class {
 }
 
 { #category : #rendering }
+GLLevel5 class >> addWarning [
+	| div |
+	div := document createElement: #div.
+	div innerHTML: 'The texture may not show because this is running from a "file:" protocol'.
+	div style: 'font-size: 200%; color: red'.
+	document body appendChild: div.
+
+]
+
+{ #category : #rendering }
 GLLevel5 class >> createProgram: gl [
 	^ gl createProgram
 		varying: #vec2 asGLType highp named: #vTextureCoord;
@@ -43,55 +53,7 @@ GLLevel5 class >> createProgram: gl [
 ]
 
 { #category : #rendering }
-GLLevel5 class >> setupForDraw [
-	texture ifNil: [
-		texture := program loadTexture: 'JS.png'.
-	].
-]
-
-{ #category : #accessing }
-GLLevel5 class >> texture [
-	^ texture
-]
-
-{ #category : #initialization }
-GLLevel5 >> addWarning [
-	| div |
-	div := document createElement: #div.
-	div innerHTML: 'The texture may not show because this is running from a "file:" protocol'.
-	div style: 'font-size: 200%; color: red'.
-	document body appendChild: div.
-
-]
-
-{ #category : #rendering }
-GLLevel5 >> drawDelta: secondsSinceLastDraw total: secondsSinceProgramStart [
-	mat4
-		rotate: rotatedViewMatrix
-		from: rotatedViewMatrix
-		rotation: secondsSinceProgramStart * 0.7
-		axis: #(0 1 0).
-	program
-		uniformMatrix4fv: #uModelViewMatrix
-		matrix: rotatedViewMatrix.
-	version < 4 ifTrue: [
-		^ gl drawArrays: TRIANGLE_STRIP offset: 0 vertexCount: 4
-	].
-	version > 4 ifTrue: [
-		program
-			activeTexture: TEXTURE0; "Tell WebGL we want to affect texture unit 0"
-			bindTexture: TEXTURE_2D with: texture; "Bind the texture to texture unit 0"
-			uniformiAt: #uSampler put: 0 "Tell the shader we bound the texture to texture unit 0"
-	].
-	version >= 4 ifTrue: [
-		program bindElementBuffer: #index.
-		^ gl drawElements: TRIANGLES vertexCount: 36 type: UNSIGNED_SHORT offset: 0
-	].
-	^ self
-]
-
-{ #category : #initialization }
-GLLevel5 >> initBuffersTexture [
+GLLevel5 class >> initBuffersTexture: program [
 	| textureCoordinates |
 	textureCoordinates := #(
     " Front "
@@ -134,10 +96,44 @@ GLLevel5 >> initBuffersTexture [
 
 ]
 
-{ #category : #initialization }
-GLLevel5 >> initializeGL [
+{ #category : #rendering }
+GLLevel5 class >> initializeGL: program [
 	document location protocol = 'file:' ifTrue: [ self addWarning ].
-	self initBuffers3D.
-	self initBuffersTexture.
+	self initBuffers3D: program.
+	texture ifNil: [
+		texture := program loadTexture: 'JS.png'.
+	].
+	self initBuffersTexture: program.
 
+]
+
+{ #category : #accessing }
+GLLevel5 class >> texture [
+	^ texture
+]
+
+{ #category : #rendering }
+GLLevel5 >> drawDelta: secondsSinceLastDraw total: secondsSinceProgramStart [
+	mat4
+		rotate: rotatedViewMatrix
+		from: rotatedViewMatrix
+		rotation: secondsSinceProgramStart * 0.7
+		axis: #(0 1 0).
+	program
+		uniformMatrix4fv: #uModelViewMatrix
+		matrix: rotatedViewMatrix.
+	version < 4 ifTrue: [
+		^ gl drawArrays: TRIANGLE_STRIP offset: 0 vertexCount: 4
+	].
+	version > 4 ifTrue: [
+		program
+			activeTexture: TEXTURE0; "Tell WebGL we want to affect texture unit 0"
+			bindTexture: TEXTURE_2D with: texture; "Bind the texture to texture unit 0"
+			uniformiAt: #uSampler put: 0 "Tell the shader we bound the texture to texture unit 0"
+	].
+	version >= 4 ifTrue: [
+		program bindElementBuffer: #index.
+		^ gl drawElements: TRIANGLES vertexCount: 36 type: UNSIGNED_SHORT offset: 0
+	].
+	^ self
 ]

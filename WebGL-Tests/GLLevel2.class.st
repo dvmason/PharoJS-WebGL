@@ -36,8 +36,20 @@ GLLevel2 class >> createProgram: gl [
 
 ]
 
-{ #category : #initialization }
-GLLevel2 >> initColours [
+{ #category : #rendering }
+GLLevel2 class >> initializeProgram: program [
+	program
+		createBuffer: #position then: [
+			program
+				arrayBuffer: #position;
+				fillBuffer: #(
+						-1  1
+						 1  1
+						-1 -1
+						 1 -1
+					);
+				point: #aVertexPosition components: 2
+	].
 	program
 		createBuffer: #color then: [
 			program

@@ -16,11 +16,9 @@ Class {
 }
 
 { #category : #rendering }
-GLLevel1 class >> createProgram: gl [
-| p |
-self halt.
-	p := gl createProgram.
-	p addShader: (
+GLLevel1 class >> createProgram: program [
+	program
+		addShader: (
 			GLVertexShader new
 				attribute: #vec4 named: #aVertexPosition;
 				uniform: #mat4 named: #uModelViewMatrix;
@@ -28,61 +26,22 @@ self halt.
 				function: #main;
 				code: 'gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition';
 				yourself
-			).
-	p addShader: (
+			);
+		addShader: (
 			GLFragmentShader new
 				function: #main;
 				code: 'gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0)';
 				yourself
-			).
-	self halt.
-	p linkProgram.
-	^ p
+			);
+		linkProgram.
+
 ]
 
 { #category : #rendering }
-GLLevel1 >> drawDelta: ignored total: rotation [
-	mat4
-			copy: rotatedViewMatrix
-			from: modelViewMatrix.
-	program
-		uniformMatrix4fv: #uModelViewMatrix
-		matrix: rotatedViewMatrix.
-	gl drawArrays: TRIANGLE_STRIP offset: 0 vertexCount: 4
-
-]
-
-{ #category : #initialization }
-GLLevel1 >> initColours [
-
-]
-
-{ #category : #initialization }
-GLLevel1 >> initMatrices [
-	| projectionMatrix |
-	projectionMatrix := mat4 create.
-	mat4
-		perspective: projectionMatrix
-		fieldOfView: 45 degreesToRadians
-		aspect: gl aspect
-		near: 0.1
-		far: 100.
-	program
-		uniformMatrix4fv: #uProjectionMatrix
-		matrix: projectionMatrix.
-	modelViewMatrix := mat4 create.
-	mat4
-		translate: modelViewMatrix
-		from: modelViewMatrix
-		translation: #(0 0 -6).
-	rotatedViewMatrix := mat4 create.
-
-]
-
-{ #category : #initialization }
-GLLevel1 >> initVertices [
+GLLevel1 class >> initializeProgram: program [
 	program
 		createBuffer: #position then: [
+			self halt.
 			program
 				arrayBuffer: #position;
 				fillBuffer: #(
@@ -96,10 +55,26 @@ GLLevel1 >> initVertices [
 
 ]
 
+{ #category : #rendering }
+GLLevel1 >> drawDelta: ignored total: rotation [
+	self halt.
+	mat4
+			copy: rotatedViewMatrix
+			from: modelViewMatrix.
+	program
+		uniformMatrix4fv: #uModelViewMatrix
+		matrix: rotatedViewMatrix;
+		drawArrays: TRIANGLE_STRIP offset: 0 vertexCount: 4
+
+]
+
 { #category : #initialization }
-GLLevel1 >> initializeGL [
-	self initVertices.
-	self initColours.
-	self initMatrices.
+GLLevel1 >> initializeStatic [
+	modelViewMatrix := mat4 create.
+	mat4
+		translate: modelViewMatrix
+		from: modelViewMatrix
+		translation: #(0 0 -6).
+	rotatedViewMatrix := mat4 create.
 
 ]
