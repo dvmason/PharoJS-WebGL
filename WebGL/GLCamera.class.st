@@ -13,7 +13,7 @@ Class {
 		'sensitivity',
 		'zoom',
 		'cameraTransform',
-		'program'
+		'context'
 	],
 	#pools : [
 		'GLConstants',
@@ -24,17 +24,21 @@ Class {
 
 { #category : #accessing }
 GLCamera >> cameraTransform [
-	| projectionMatrix |
-	projectionMatrix := mat4 create.
-	mat4
-		perspective: projectionMatrix
-		fieldOfView: 45 degreesToRadians
-		aspect: program aspect
-		near: 0.1
-		far: 100.
-	program
-		uniformMatrix4fv: #uProjectionMatrix
-		matrix: projectionMatrix.
+	cameraTransform ifNil: [
+		cameraTransform := mat4 create.
+		mat4
+			perspective: cameraTransform
+			fieldOfView: 45 degreesToRadians
+			aspect: context aspect
+			near: 0.1
+			far: 100
+		].
+	^ cameraTransform
+]
+
+{ #category : #accessing }
+GLCamera >> context: aGLContext [
+	context := aGLContext.
 
 ]
 
@@ -60,8 +64,16 @@ GLCamera >> pitch: v [
 ]
 
 { #category : #accessing }
-GLCamera >> program: aGLProgram [
-	program := aGLProgram.
+GLCamera >> sensitivity: s [
+	sensitivity := s.
+	cameraTransform := nil.
+
+]
+
+{ #category : #accessing }
+GLCamera >> speed: s [
+	speed := s.
+	cameraTransform := nil.
 
 ]
 
@@ -74,7 +86,7 @@ GLCamera >> yaw: v [
 
 { #category : #accessing }
 GLCamera >> zoom: v [
-	zoom := (v min: 45) max: 150.
+	zoom := (v min: 150) max: 45.
 	cameraTransform := nil.
 
 ]

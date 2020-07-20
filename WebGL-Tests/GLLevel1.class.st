@@ -5,7 +5,6 @@ Class {
 	#name : #GLLevel1,
 	#superclass : #GLObject,
 	#instVars : [
-		'modelViewMatrix',
 		'rotatedViewMatrix'
 	],
 	#pools : [
@@ -18,21 +17,21 @@ Class {
 { #category : #rendering }
 GLLevel1 class >> createProgram: program [
 	program
-		addShader: (
-			GLVertexShader new
+		vertexShader: [: vertexShader |
+			vertexShader
 				attribute: #vec4 named: #aVertexPosition;
 				uniform: #mat4 named: #uModelViewMatrix;
 				uniform: #mat4 named: #uProjectionMatrix;
 				function: #main;
-				code: 'gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition';
+				assign: #gl_Position equals: #(uProjectionMatrix * uModelViewMatrix * aVertexPosition);
 				yourself
-			);
-		addShader: (
-			GLFragmentShader new
+			];
+		fragmentShader: [: fragmentShader |
+			fragmentShader
 				function: #main;
-				code: 'gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0)';
+				assign: #gl_FragColor equals: #(vec4 (1.0 1.0 1.0 1.0));
 				yourself
-			);
+			];
 		linkProgram.
 
 ]
@@ -40,8 +39,7 @@ GLLevel1 class >> createProgram: program [
 { #category : #rendering }
 GLLevel1 class >> initializeProgram: program [
 	program
-		createBuffer: #position then: [
-			self halt.
+		createBuffer: #position then: [: buffer |
 			program
 				arrayBuffer: #position;
 				fillBuffer: #(
@@ -49,32 +47,28 @@ GLLevel1 class >> initializeProgram: program [
 						 1  1
 						-1 -1
 						 1 -1
-					);
-				point: #aVertexPosition components: 2
-	].
+					)
+		].
+	self log: 'initializeProgram:'.
 
 ]
 
 { #category : #rendering }
 GLLevel1 >> drawDelta: ignored total: rotation [
-	self halt.
 	mat4
 			copy: rotatedViewMatrix
 			from: modelViewMatrix.
 	program
-		uniformMatrix4fv: #uModelViewMatrix
-		matrix: rotatedViewMatrix;
-		drawArrays: TRIANGLE_STRIP offset: 0 vertexCount: 4
+		uniformMatrix4fv: #uModelViewMatrix matrix: rotatedViewMatrix;
+		point: #aVertexPosition at: #position components: 2;
+		drawArrays: TRIANGLE_STRIP offset: 0 vertexCount: 4.
+	console log: 'draw triangle_strip'.
 
 ]
 
 { #category : #initialization }
 GLLevel1 >> initializeStatic [
-	modelViewMatrix := mat4 create.
-	mat4
-		translate: modelViewMatrix
-		from: modelViewMatrix
-		translation: #(0 0 -6).
 	rotatedViewMatrix := mat4 create.
+	console log: 'initializeStatic'.
 
 ]

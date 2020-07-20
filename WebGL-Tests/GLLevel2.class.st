@@ -12,27 +12,27 @@ Class {
 }
 
 { #category : #rendering }
-GLLevel2 class >> createProgram: gl [
-	^ gl createProgram
+GLLevel2 class >> createProgram: program [
+	program
 		varying: #vec4 asGLType lowp named: #vColor;
-		addShader: (
-			GLVertexShader new
+		vertexShader: [: vertexShader |
+			vertexShader
 				attribute: #vec4 named: #aVertexPosition;
 				attribute: #vec4 named: #aVertexColor;
 				uniform: #mat4 named: #uModelViewMatrix;
 				uniform: #mat4 named: #uProjectionMatrix;
 				function: #main;
-				code: 'gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition';
-				code: 'vColor = aVertexColor';
+				assign: #gl_Position equals: #( uProjectionMatrix * uModelViewMatrix * aVertexPosition );
+				assign: #vColor equals: #aVertexColor;
 				yourself
-			);
-		addShader: (
-			GLFragmentShader new
+			];
+		fragmentShader: [: fragmentShader |
+			fragmentShader
 				function: #main;
-				code: 'gl_FragColor = vColor';
+				assign: #gl_FragColor equals: #vColor;
 				yourself
-			);
-		linkProgram
+			];
+		linkProgram.
 
 ]
 
@@ -47,9 +47,8 @@ GLLevel2 class >> initializeProgram: program [
 						 1  1
 						-1 -1
 						 1 -1
-					);
-				point: #aVertexPosition components: 2
-	].
+					)
+		].
 	program
 		createBuffer: #color then: [
 			program
@@ -59,8 +58,15 @@ GLLevel2 class >> initializeProgram: program [
 						1 0 0 1
 						0 1 0 1
 						0 0 1 1
-					);
-				point: #aVertexColor components: 4
+					)
 	].
+
+]
+
+{ #category : #rendering }
+GLLevel2 >> drawDelta: delta total: total [
+	program
+		point: #aVertexColor at: #color components: 4.
+	super drawDelta: delta total: total.
 
 ]

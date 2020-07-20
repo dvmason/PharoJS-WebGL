@@ -5,7 +5,8 @@ Class {
 	#name : #GLRotationApp,
 	#superclass : #PjWebApplication,
 	#instVars : [
-		'gl'
+		'gl',
+		'glObjects'
 	],
 	#pools : [
 		'GLConstants',
@@ -26,17 +27,28 @@ GLRotationApp class >> exportVersion [
 	^ exportVersion
 ]
 
+{ #category : #accessing }
+GLRotationApp class >> pharoJsSelectorPrefix [
+	<pharoJsSkip>
+	^ '_'
+]
+
+{ #category : #initialization }
+GLRotationApp >> initialize [
+	super initialize.
+	glObjects := {GLLevel1 . GLLevel2 . GLLevel2 . GLLevel3 . GLLevel3 . GLLevel4 . GLLevel5 . GLLevel6 } first: self class exportVersion.
+
+]
+
 { #category : #'start-stop' }
 GLRotationApp >> start [
-	| version angle |
+	| angle |
 	super start.
-	gl := GLContext new.
-	console log: gl webGLVersion.
-	version := self class exportVersion.
-	{GLLevel1 . GLLevel1 . GLLevel1} withIndexDo: [: level : position |
-		position > version ifTrue: [ ^ self ].
-		angle := 360 degreesToRadians / (version + 1) * position.
-		gl addObject: (level new translateX: -0.5 - angle sin y: angle cos z: 0).
-	]
-
+	gl := GLContext "noAnimate"new.
+	glObjects withIndexDo: [: objectClass : position |
+		angle := 360 degreesToRadians / glObjects size * position.
+		gl addObject: (objectClass new translateX: (-0.5 - angle sin) * 3 y: angle cos * 3 z: -10).
+	].
+"	gl drawOnce.
+"
 ]

@@ -5,7 +5,6 @@ Class {
 	#name : #GLRotationCube,
 	#superclass : #GLObject,
 	#instVars : [
-		'modelViewMatrix',
 		'rotatedViewMatrix',
 		'version',
 		'texture'

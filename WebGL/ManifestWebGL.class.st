@@ -28,13 +28,23 @@ ManifestWebGL class >> ruleRBExcessiveVariablesRuleV1FalsePositive [
 ]
 
 { #category : #'code-critics' }
+ManifestWebGL class >> ruleRBLongMethodsRuleV1FalsePositive [
+	^ #(#(#(#RGMethodDefinition #(#GLShadingLanguage #maybeAddSuffix:nested: #false)) #'2020-07-17T17:31:44.387311-04:00') )
+]
+
+{ #category : #'code-critics' }
+ManifestWebGL class >> ruleRBRefersToClassRuleV1FalsePositive [
+	^ #(#(#(#RGMethodDefinition #(#GLShadingLanguage #asString #false)) #'2020-07-17T08:30:51.778275-04:00') )
+]
+
+{ #category : #'code-critics' }
 ManifestWebGL class >> ruleRBSendsDifferentSuperRuleV1FalsePositive [
 	^ #(#(#(#RGMethodDefinition #(#'GLContext class' #fromCanvas: #true)) #'2020-01-04T17:04:06.652267-05:00') )
 ]
 
 { #category : #'code-critics' }
 ManifestWebGL class >> ruleRBStringConcatenationRuleV1FalsePositive [
-	^ #(#(#(#RGMethodDefinition #(#GLProgram #linkProgram #false)) #'2020-04-09T12:17:03.951277-04:00') )
+	^ #(#(#(#RGMethodDefinition #(#GLProgram #linkProgram #false)) #'2020-04-09T12:17:03.951277-04:00') #(#(#RGMethodDefinition #(#GLShadingLanguage #maybeAddSuffix:nested: #false)) #'2020-07-17T17:31:38.619435-04:00') )
 ]
 
 { #category : #'code-critics' }

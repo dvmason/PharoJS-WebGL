@@ -11,7 +11,8 @@ Class {
 		'camera',
 		'fps',
 		'programs',
-		'webGL'
+		'webGL',
+		'suffix'
 	],
 	#pools : [
 		'GLConstants',
@@ -141,9 +142,12 @@ GLContext class >> enableVertexAttribArray: position [
 ]
 
 { #category : #'instance creation' }
-GLContext class >> fromCanvas: canvas [
-	console log: (GLFloat32Array x: 1 y: 2 z: 4).
-	^ super new fromCanvas: canvas
+GLContext class >> fromCanvas: canvas animate: startAnimation [
+	| result |
+	self log: [GLFloat32Array x: 1 y: 2 z: 4].
+	result := super new fromCanvas: canvas.
+	startAnimation ifTrue: [ result startAnimation ].
+	^ result
 ]
 
 { #category : #'webgl-methods' }
@@ -208,7 +212,12 @@ GLContext class >> linkProgram: program [
 
 { #category : #'instance creation' }
 GLContext class >> new [
-	^ self fromCanvas: #glCanvas
+	^ self fromCanvas: #glCanvas animate: true
+]
+
+{ #category : #'instance creation' }
+GLContext class >> noAnimate [
+	^ self fromCanvas: #glCanvas animate: false
 ]
 
 { #category : #'glmatrix-methods' }
@@ -313,34 +322,9 @@ GLContext class >> vertexAttribPointer: position numComponents: n type: type nor
 
 ]
 
-{ #category : #textures }
-GLContext >> activeTexture: key [
-	^ webGL activeTexture: key
-]
-
 { #category : #rendering }
 GLContext >> addObject: aGlObject [
 	(self programFor: aGlObject) addObject: aGlObject
-]
-
-{ #category : #rendering }
-GLContext >> animate [
-	| then render total |
-	render := then := nil.
-	total := fps := 0.
-	render := [: now | | deltaTime |
-		deltaTime := 0.001*(now - then).
-		deltaTime > 0 ifTrue: [fps := 1.0 / deltaTime.		console log: fps].
-		then := now.
-		self clear.
-		total := total + deltaTime.
-		programs valuesDo: [ : aGLProgram |
-				aGLProgram drawDelta: deltaTime total: total.
-		].
-		window requestAnimationFrame: render.
-	].
-	window requestAnimationFrame: [: now | then := now. render value: now].
-
 ]
 
 { #category : #accessing }
@@ -348,64 +332,50 @@ GLContext >> aspect [
 	^ webGL drawingBufferWidth / webGL drawingBufferHeight
 ]
 
-{ #category : #shaders }
-GLContext >> attachShader: program shader: shader [
-	^ webGL attachShader: program shader: shader
-]
-
-{ #category : #textures }
-GLContext >> bindTexture: kind with: texture [
-	^ webGL bindTexture: kind with: texture
-]
-
 { #category : #initialization }
 GLContext >> camera [
-	^ camera ifNil: [ camera := GLCamera new gl: self ]
+	^ camera ifNil: [ camera := GLCamera new context: self ]
 ]
 
 { #category : #'webgl-methods' }
 GLContext >> clear [
+	webGL log: 'clear:'.
 	webGL clear: COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT.
 
 ]
 
 { #category : #shaders }
 GLContext >> compileShader: shader [
+	webGL log: 'compileShader:'.
 	^ webGL compileShader: shader
 ]
 
 { #category : #buffers }
 GLContext >> createProgram [
-	^ GLProgram new shaderProgram: webGL createProgram webGL: webGL
+	webGL log: 'createProgram'.
+	^ self programClass new
+		suffix: self newSuffix;
+		shaderProgram: webGL createProgram webGL: webGL context: self
 ]
 
 { #category : #shaders }
 GLContext >> createShader: type [
+	webGL log: 'createShader:'.
 	^ webGL createShader: type
 ]
 
-{ #category : #textures }
-GLContext >> emptyTexture [
-	| texture |
-  texture := webGL createTexture.
-  webGL bindTexture: TEXTURE_2D with: texture.
+{ #category : #rendering }
+GLContext >> drawDelta: deltaTime total: total [
+	self clear.
+	programs valuesDo: [ : aGLProgram |
+			aGLProgram drawDelta: deltaTime total: total camera: self camera.
+	].
 
-  " Because images have to be download over the internet
-    they might take a moment until they are ready.
-    Until then put a single pixel in the texture so we can
-    use it immediately. When the image has finished downloading
-    we'll update the texture with the contents of the image. "
-console log: #emptyTexture.
-  webGL texImage2D: TEXTURE_2D
-		level: 0
-		internalFormat: RGBA
-		width: 1
-		height: 1
-		border: 0
-		srcFormat: RGBA
-		srcType: UNSIGNED_BYTE
-		pixel: (Uint8Array new: #(0 0 255 255) " opaque blue").
-  ^ texture
+]
+
+{ #category : #rendering }
+GLContext >> drawOnce [
+	self drawDelta: 0 total: 0.
 
 ]
 
@@ -417,6 +387,8 @@ GLContext >> fromCanvas: selector [
 	webGL := (canvas getContext: #webgl2) ifNil: [ webGLVersion := 1. canvas getContext: #webgl ].
 	webGL ifNil: [ self error: 'Unable to initialize WebGL. Your browser or machine may not support it.' ].
 	GLConstants loadConstants: webGL.
+	webGL js_at: '_log_' put: [: aString | console log: 'webGL: ' with: aString ].
+	webGL log: 'webGL clearColor:'.
 	webGL clearColor: 0 green: 0.3 blue: 0 alpha: 1.
 	webGL clearDepth: 1.
 	webGL enable: DEPTH_TEST.
@@ -426,6 +398,7 @@ GLContext >> fromCanvas: selector [
 
 { #category : #shaders }
 GLContext >> getShaderParameter: program parameter: parameter [
+	webGL log: 'getShaderParameter:'.
 	^ webGL getShaderParameter: program parameter: parameter
 ]
 
@@ -433,43 +406,23 @@ GLContext >> getShaderParameter: program parameter: parameter [
 GLContext >> initialize [
 	super initialize.
 	programs := Dictionary new.
-	self animate.
-
 
 ]
 
 { #category : #textures }
-GLContext >> loadTexture: url [
-	| texture image |
-	texture := self emptyTexture.
-	image := Image new.
-	image addEventListener: #load block: [
-		console log: #loadTexture.
-		webGL
-			bindTexture: TEXTURE_2D with: texture;
-    		texImage2D: TEXTURE_2D
-				level: 0
-				internalFormat: RGBA
-				srcFormat: RGBA
-				srcType: UNSIGNED_BYTE
-				image: image.
+GLContext >> log: aString [
+	console log: aString.
 
-    " WebGL1 has different requirements for power of 2 images
-      vs non power of 2 images so check if the image is a
-      power of 2 in both dimensions. "
-    (self webGLVersion > 1 or: [image width isPowerOfTwo & image height isPowerOfTwo]) ifTrue: [
-       webGL generateMipmap: TEXTURE_2D.
-    ] ifFalse: [
-       " No, it's not a power of 2. Turn off mips and set wrapping to clamp to edge "
-       webGL texParameteri: TEXTURE_2D at: TEXTURE_WRAP_S put: CLAMP_TO_EDGE.
-       webGL texParameteri: TEXTURE_2D at: TEXTURE_WRAP_T put: CLAMP_TO_EDGE.
-       webGL texParameteri: TEXTURE_2D at: TEXTURE_MIN_FILTER put: LINEAR.
-    ]
-  ].
-  image src: url.
+]
 
-  ^ texture
+{ #category : #initialization }
+GLContext >> newSuffix [
+	^ (suffix := (suffix ifNil: [ 0 ])+1) asString
+]
 
+{ #category : #buffers }
+GLContext >> programClass [
+	^ GLProgram
 ]
 
 { #category : #rendering }
@@ -495,11 +448,31 @@ GLContext >> removeObject: aGlObject [
 
 { #category : #shaders }
 GLContext >> shaderSource: shader source: source [
+	webGL log: 'shaderSource:'.
 	^ webGL shaderSource: shader source: source
+]
+
+{ #category : #rendering }
+GLContext >> startAnimation [
+	| then render total |
+	window isPjProxyOrNil ifTrue: [ ^ self ].
+	render := then := nil.
+	total := fps := 0.
+	render := [: now | | deltaTime |
+		deltaTime := 0.001*(now - then).
+		deltaTime > 0 ifTrue: [fps := 1.0 / deltaTime.		console log: fps].
+		then := now.
+		total := total + deltaTime.
+		self drawDelta: deltaTime total: total.
+		window requestAnimationFrame: render.
+	].
+	window requestAnimationFrame: [: now | then := now. render value: now].
+
 ]
 
 { #category : #shaders }
 GLContext >> useProgram: aWebGLProgram [
+	webGL log: 'useProgram:'.
 	webGL useProgram: aWebGLProgram.
 
 ]

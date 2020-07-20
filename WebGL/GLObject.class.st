@@ -5,7 +5,8 @@ Class {
 	#name : #GLObject,
 	#superclass : #Object,
 	#instVars : [
-		'program'
+		'program',
+		'modelViewMatrix'
 	],
 	#pools : [
 		'GLConstants',
@@ -43,7 +44,8 @@ GLObject >> drawDelta: secondsSinceLastDraw total: secondsSinceProgramStart [
 ]
 
 { #category : #accessing }
-GLObject >> initializeGL [
+GLObject >> modelViewMatrix [
+	^ modelViewMatrix ifNil: [ modelViewMatrix := mat4 create ]
 ]
 
 { #category : #accessing }
@@ -53,5 +55,9 @@ GLObject >> program: aGLProgram [
 
 { #category : #accessing }
 GLObject >> translateX: x y: y z: z [
-	self halt
+	mat4
+		translate: self modelViewMatrix
+		from: modelViewMatrix
+		translation: { x . y . z }.
+
 ]

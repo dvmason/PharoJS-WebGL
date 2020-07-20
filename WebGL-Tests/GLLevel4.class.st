@@ -3,7 +3,7 @@ https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Tutorial/Creating_3D_
 "
 Class {
 	#name : #GLLevel4,
-	#superclass : #GLLevel1,
+	#superclass : #GLLevel2,
 	#pools : [
 		'GLConstants',
 		'GLGlobals'
@@ -52,8 +52,7 @@ GLLevel4 class >> initBuffers3D: program [
   -1.0 -1.0  1.0
   -1.0  1.0  1.0
   -1.0  1.0 -1.0
-				);
-			point: #aVertexPosition components: 3
+				)
 	].
 
 	program createBuffer: #index then: [
@@ -88,15 +87,30 @@ GLLevel4 class >> initBuffersVertexColoring: program [
 	program createBuffer: #color then: [
 		program
 			arrayBuffer: #color;
-			fillBuffer: colors;
-			point: #aVertexColor components: 4
+			fillBuffer: colors
 	].
 
 ]
 
 { #category : #rendering }
-GLLevel4 class >> initializeGL: program [
+GLLevel4 class >> initializeProgram: program [
 	self initBuffers3D: program.
 	self initBuffersVertexColoring: program.
+
+]
+
+{ #category : #rendering }
+GLLevel4 >> drawDelta: secondsSinceLastDraw total: secondsSinceProgramStart [
+	mat4
+		rotate: rotatedViewMatrix
+		from: self modelViewMatrix
+		rotation: secondsSinceProgramStart * 0.7
+		axis: #(0 1 0).
+	program
+		point: #aVertexPosition at: #position components: 3;
+		elementArrayBuffer: #index;
+		point: #aVertexColor at: #color components: 4;
+		uniformMatrix4fv: #uModelViewMatrix matrix: rotatedViewMatrix;
+		drawElements: TRIANGLES vertexCount: 36 type: UNSIGNED_SHORT offset: 0
 
 ]

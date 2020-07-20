@@ -3,7 +3,7 @@ https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Tutorial/Animating_ob
 "
 Class {
 	#name : #GLLevel3,
-	#superclass : #GLLevel1,
+	#superclass : #GLLevel2,
 	#pools : [
 		'GLConstants',
 		'GLGlobals'
@@ -15,12 +15,13 @@ Class {
 GLLevel3 >> drawDelta: secondsSinceLastDraw total: secondsSinceProgramStart [
 	mat4
 		rotate: rotatedViewMatrix
-		from: modelViewMatrix
+		from: self modelViewMatrix
 		rotation: secondsSinceProgramStart 
-		axis: #(0 0 1).
+		axis: #(0 1 1).
 	program
-		uniformMatrix4fv: #uModelViewMatrix
-		matrix: rotatedViewMatrix;
+		uniformMatrix4fv: #uModelViewMatrix matrix: rotatedViewMatrix;
+		point: #aVertexPosition at: #position components: 2;
+		point: #aVertexColor at: #color components: 4;
 		drawArrays: TRIANGLE_STRIP offset: 0 vertexCount: 4
 
 ]

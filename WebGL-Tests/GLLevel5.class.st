@@ -28,28 +28,29 @@ GLLevel5 class >> addWarning [
 ]
 
 { #category : #rendering }
-GLLevel5 class >> createProgram: gl [
-	^ gl createProgram
+GLLevel5 class >> createProgram: program [
+	program
 		varying: #vec2 asGLType highp named: #vTextureCoord;
-		addShader: (
-			GLVertexShader new
+		vertexShader: [: vertexShader |
+			vertexShader
 				attribute: #vec4 named: #aVertexPosition;
 				attribute: #vec2 named: #aTextureCoord;
 				uniform: #mat4 named: #uModelViewMatrix;
 				uniform: #mat4 named: #uProjectionMatrix;
 				function: #main;
-				code: 'gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition';
-				code: 'vTextureCoord = aTextureCoord';
+				assign: #gl_Position equals: #( uProjectionMatrix * uModelViewMatrix * aVertexPosition );
+				assign: #vTextureCoord equals: #aTextureCoord;
 				yourself
-			);
-		addShader: (
-			GLFragmentShader new
+			];
+		fragmentShader: [: fragmentShader |
+			fragmentShader
 				uniform: #sampler2D named: #uSampler;
 				function: #main;
-				code: 'gl_FragColor = texture2D(uSampler, vTextureCoord)';
+				assign: #gl_FragColor equals: #( texture2D ( uSampler vTextureCoord ) );
 				yourself
-			);
-		linkProgram
+			];
+		linkProgram.
+
 ]
 
 { #category : #rendering }
@@ -90,14 +91,13 @@ GLLevel5 class >> initBuffersTexture: program [
 	program createBuffer: #texture then: [
 		program
 			arrayBuffer: #texture;
-			fillBuffer: textureCoordinates;
-			point: #aTextureCoord components: 2
+			fillBuffer: textureCoordinates
 	].
 
 ]
 
 { #category : #rendering }
-GLLevel5 class >> initializeGL: program [
+GLLevel5 class >> initializeProgram: program [
 	document location protocol = 'file:' ifTrue: [ self addWarning ].
 	self initBuffers3D: program.
 	texture ifNil: [
@@ -114,26 +114,11 @@ GLLevel5 class >> texture [
 
 { #category : #rendering }
 GLLevel5 >> drawDelta: secondsSinceLastDraw total: secondsSinceProgramStart [
-	mat4
-		rotate: rotatedViewMatrix
-		from: rotatedViewMatrix
-		rotation: secondsSinceProgramStart * 0.7
-		axis: #(0 1 0).
 	program
-		uniformMatrix4fv: #uModelViewMatrix
-		matrix: rotatedViewMatrix.
-	version < 4 ifTrue: [
-		^ gl drawArrays: TRIANGLE_STRIP offset: 0 vertexCount: 4
-	].
-	version > 4 ifTrue: [
-		program
-			activeTexture: TEXTURE0; "Tell WebGL we want to affect texture unit 0"
-			bindTexture: TEXTURE_2D with: texture; "Bind the texture to texture unit 0"
-			uniformiAt: #uSampler put: 0 "Tell the shader we bound the texture to texture unit 0"
-	].
-	version >= 4 ifTrue: [
-		program bindElementBuffer: #index.
-		^ gl drawElements: TRIANGLES vertexCount: 36 type: UNSIGNED_SHORT offset: 0
-	].
-	^ self
+		point: #aTextureCoord at: #texture components: 2;
+		activeTexture: TEXTURE0; "Tell WebGL we want to affect texture unit 0"
+		bindTexture: TEXTURE_2D with: texture; "Bind the texture to texture unit 0"
+		uniformiAt: #uSampler put: 0. "Tell the shader we bound the texture to texture unit 0"
+	super drawDelta: secondsSinceLastDraw total: secondsSinceProgramStart.
+
 ]
